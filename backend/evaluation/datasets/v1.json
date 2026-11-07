@@ -1,0 +1,96 @@
+{
+  "datasetVersion": "insight-eval-v1",
+  "description": "Small controlled fixtures for deterministic baseline development. Fixture source is parsed as data and is never executed.",
+  "cases": [
+    {
+      "id": "dynamic-eval-001",
+      "pullRequest": "security/eval-call",
+      "positive": true,
+      "files": [{ "path": "src/parse.js", "baseContent": "export function parse(value) { return value; }", "headContent": "export function parse(value) {\n  return eval(value);\n}", "changedHeadLineRanges": [{ "startLine": 2, "endLine": 2 }] }],
+      "expected": [{ "ruleId": "SEC001", "path": "src/parse.js", "side": "head", "startLine": 2 }]
+    },
+    {
+      "id": "dynamic-function-002",
+      "pullRequest": "security/function-constructor",
+      "positive": true,
+      "files": [{ "path": "src/compile.js", "baseContent": "export const run = value => value;", "headContent": "export const run = value => new Function(value)();", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": [{ "ruleId": "SEC001", "path": "src/compile.js", "side": "head", "startLine": 1 }]
+    },
+    {
+      "id": "possible-secret-003",
+      "pullRequest": "security/embedded-credential",
+      "positive": true,
+      "files": [{ "path": "src/config.js", "baseContent": "export const apiKey = \"placeholder\";", "headContent": "export const apiKey = \"ghp_sampleOnlyNotARealCredential123456\";", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": [{ "ruleId": "SEC002", "path": "src/config.js", "side": "head", "startLine": 1 }]
+    },
+    {
+      "id": "unsafe-tls-004",
+      "pullRequest": "security/tls-verification-disabled",
+      "positive": true,
+      "files": [{ "path": "src/client.js", "baseContent": "export const agent = {};", "headContent": "export const agent = new Agent({ rejectUnauthorized: false });", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": [{ "ruleId": "SEC003", "path": "src/client.js", "side": "head", "startLine": 1 }]
+    },
+    {
+      "id": "parser-diagnostic-005",
+      "pullRequest": "correctness/syntax-error",
+      "positive": true,
+      "files": [{ "path": "src/handler.js", "baseContent": "export const handler = () => 1;", "headContent": "export const handler = () => {\n  const value = ;\n  return value;\n};", "changedHeadLineRanges": [{ "startLine": 2, "endLine": 2 }] }],
+      "expected": [{ "ruleId": "JS001", "path": "src/handler.js", "side": "head", "startLine": 2 }]
+    },
+    {
+      "id": "removed-export-006",
+      "pullRequest": "compatibility/export-removed",
+      "positive": true,
+      "files": [{ "path": "src/public.js", "baseContent": "export function getInvoice(id) { return id; }", "headContent": "export const ready = true;", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }], "changedBaseLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": [{ "ruleId": "API001", "path": "src/public.js", "side": "base", "startLine": 1 }]
+    },
+    {
+      "id": "signature-change-007",
+      "pullRequest": "compatibility/signature-changed",
+      "positive": true,
+      "files": [{ "path": "src/public.js", "baseContent": "export function load(id) { return id; }", "headContent": "export function load(id, options) { return id; }", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": [{ "ruleId": "API002", "path": "src/public.js", "side": "head", "startLine": 1 }]
+    },
+    {
+      "id": "benign-text-008",
+      "pullRequest": "clean/eval-word-in-string",
+      "positive": false,
+      "files": [{ "path": "src/message.js", "baseContent": "export const message = 'ready';", "headContent": "export const message = \"The word eval appears in this documentation message.\";", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": []
+    },
+    {
+      "id": "safe-tls-009",
+      "pullRequest": "clean/tls-verification-enabled",
+      "positive": false,
+      "files": [{ "path": "src/client.js", "baseContent": "export const agent = {};", "headContent": "export const agent = new Agent({ rejectUnauthorized: true });", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": []
+    },
+    {
+      "id": "placeholder-secret-010",
+      "pullRequest": "clean/placeholder-credential",
+      "positive": false,
+      "files": [{ "path": "src/config.js", "baseContent": "export const password = \"change-me\";", "headContent": "export const password = \"change-me\";", "changedHeadLineRanges": [{ "startLine": 1, "endLine": 1 }] }],
+      "expected": []
+    }
+  ],
+  "patchCases": [
+    {
+      "id": "patch-valid-001",
+      "source": "export function safe(value) {\n  return eval(value);\n}\n",
+      "expectedFileHash": "71ea21ed9b63cab9fee4bf081f9e132e5d913e286d9888a53dc2da53e6085e2b",
+      "startLine": 2,
+      "endLine": 2,
+      "proposedCode": "  return value;",
+      "expectedValid": true
+    },
+    {
+      "id": "patch-invalid-syntax-002",
+      "source": "export function safe(value) {\n  return value;\n}\n",
+      "expectedFileHash": "014f3cc6657c114a8d9fe03bcb13223cb6efeb42c01d42a176fd82fdbc03e893",
+      "startLine": 2,
+      "endLine": 2,
+      "proposedCode": "  return (",
+      "expectedValid": false
+    }
+  ]
+}
